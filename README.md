@@ -1,4 +1,4 @@
-# AutoCC
+# AutoCI/CD
 
 AutoCC is a Continuous Integration/Continuous Deployment (CI/CD) tool designed to automate your application workflows. It monitors configuration files, updates repositories, and executes defined steps automatically. This tool is tailored for Linux systems.
 
