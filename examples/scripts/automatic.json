@@ -1,0 +1,14 @@
+{
+  "appName": "marcuwynu23",
+  "gitRepo": "git@github.com:marcuwynu23/marcuwynu23.git",
+  "triggerBranch": "main",
+  "steps": [
+    {
+      "name": "log directory",
+      "cmd": "ls",
+      "args": [
+        "-l"
+      ]
+    }
+  ]
+}

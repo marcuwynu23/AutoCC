@@ -1,0 +1,6 @@
+{
+  "scriptsDirectory": "./scripts",
+  "appsDirectory": "./apps",
+  "ticker": 30,
+  "logEnabled": true
+}
