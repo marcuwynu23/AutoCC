@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -19,9 +20,8 @@ import (
 )
 
 type Step struct {
-	Name string   `json:"name"`
-	Cmd  string   `json:"cmd"`
-	Args []string `json:"args"`
+	Name    string `json:"name"`
+	Command string `json:"command"`
 }
 
 type Config struct {
@@ -352,7 +352,20 @@ func executeSteps(repoDir string, steps []Step, appName string) {
 		retry := false
 		for _, step := range steps {
 			log.Printf("%s", color.BlueString("\n[%s] Executing step: %s", appName, step.Name))
-			cmd := exec.Command(step.Cmd, step.Args...)
+
+			// Split the command string into command and arguments
+			commandParts := strings.Fields(step.Command)
+			if len(commandParts) == 0 {
+				log.Printf("%s", color.RedString("[%s] Step %s has no command", appName, step.Name))
+				continue
+			}
+
+			// The first part is the command
+			command := commandParts[0]
+			// The rest are the arguments
+			args := commandParts[1:]
+
+			cmd := exec.Command(command, args...)
 			cmd.Dir = repoDir
 			output, err := cmd.CombinedOutput()
 			if err != nil {
