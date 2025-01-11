@@ -1,5 +1,5 @@
 <div align="center">
-  <h1> AutoCI/CD </h1>
+  <h1> AutoCC </h1>
 </div>
 
 <p align="center">
