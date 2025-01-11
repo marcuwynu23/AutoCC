@@ -1,4 +1,13 @@
-# AutoCI/CD
+<div align="center">
+  <h1> AutoCC </h1>
+</div>
+
+<p align="center">
+  <img src="https://img.shields.io/github/stars/marcuwynu23/AutoCC.svg" alt="Stars Badge"/>
+  <img src="https://img.shields.io/github/forks/marcuwynu23/AutoCC.svg" alt="Forks Badge"/>
+  <img src="https://img.shields.io/github/issues/marcuwynu23/AutoCC.svg" alt="Issues Badge"/>
+  <img src="https://img.shields.io/github/license/marcuwynu23/AutoCC.svg" alt="License Badge"/>
+</p>
 
 AutoCC is a Continuous Integration/Continuous Deployment (CI/CD) tool designed to automate your application workflows. It monitors configuration files, updates repositories, and executes defined steps automatically.
 
