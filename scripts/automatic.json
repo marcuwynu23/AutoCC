@@ -5,10 +5,7 @@
   "steps": [
     {
       "name": "log directory",
-      "cmd": "ls",
-      "args": [
-        "-l"
-      ]
+      "command": "ls -l"
     }
   ]
 }
