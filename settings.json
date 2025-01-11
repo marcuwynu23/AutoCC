@@ -3,5 +3,5 @@
   "appsDirectory": "./apps",
   "ticker": 5,
   "logEnabled": true,
-  "logDirectory": "./logs"
+  "logDirectory": "./"
 }
