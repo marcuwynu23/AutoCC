@@ -1,0 +1,53 @@
+{
+  "appName": "vue3-vite-project-template",
+  "gitRepo": "git@github.com:marcuwynu23/vue3-vite-project-template.git",
+  "triggerBranch": "main",
+  "steps": [
+    {
+      "name": "Delete Build Project",
+      "cmd": "rm",
+      "args": [
+        "-rf",
+        "dist"
+      ]
+    },
+    {
+      "name": "Install Dev Dependencies",
+      "cmd": "npm",
+      "args": [
+        "i",
+        "--save-dev"
+      ]
+    },
+    {
+      "name": "Build the Project",
+      "cmd": "npm",
+      "args": [
+        "run",
+        "build"
+      ]
+    },
+    {
+      "name": "Open browser",
+      "cmd": "wr",
+      "args": [
+        "http://localhost:3000"
+      ]
+    },
+    {
+      "name": "Test Serve",
+      "cmd": "pm2",
+      "args": [
+        "start",
+        "php",
+        "--name",
+        "deploy-web",
+        "--",
+        "-S",
+        "localhost:3000",
+        "-t",
+        "dist"
+      ]
+    }
+  ]
+}

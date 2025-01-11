@@ -3,10 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sync"
 	"time"
 
@@ -34,9 +36,11 @@ type GlobalConfig struct {
 	AppsDirectory    string `json:"appsDirectory"`
 	Ticker           int    `json:"ticker"`
 	LogEnabled       bool   `json:"logEnabled"`
+	LogDirectory     string `json:"logDirectory"`
 }
 
 var globalConfig GlobalConfig
+var logFile *os.File
 
 func main() {
 	// Load global settings
@@ -50,6 +54,7 @@ func main() {
 	// Use the configured directories from global settings
 	scriptsDir := globalConfig.ScriptsDirectory
 	appsDir := globalConfig.AppsDirectory
+	logDir := globalConfig.LogDirectory
 
 	if scriptsDir == "" {
 		scriptsDir = "./scripts" // Default if not provided
@@ -58,9 +63,43 @@ func main() {
 	if appsDir == "" {
 		appsDir = "./apps" // Default if not provided
 	}
-
+	initLogger(logDir)
 	// Start monitoring the directory
 	watchConfig(scriptsDir, appsDir)
+}
+
+var ansiEscapeCodeRegex = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+// removeColors removes any ANSI color codes from log messages
+func removeColors(w io.Writer) io.Writer {
+	return &ansiStripper{w: w}
+}
+
+// ansiStripper is a custom writer that strips color codes from the output
+type ansiStripper struct {
+	w io.Writer
+}
+
+// Write method strips the color codes from the log message
+func (a *ansiStripper) Write(p []byte) (n int, err error) {
+	// Remove the ANSI escape codes (colors)
+	stripedText := ansiEscapeCodeRegex.ReplaceAll(p, []byte{})
+	return a.w.Write(stripedText)
+}
+func initLogger(logDir string) {
+	if globalConfig.LogEnabled {
+		// Open the log file
+		logFileName := filepath.Join(logDir, "autocc.log")
+		logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+		if err != nil {
+			log.Fatalf("Error opening log file: %v", err)
+		}
+		// Set the log output to both file and stdout (console)
+		log.SetOutput(io.MultiWriter(os.Stdout, removeColors(logFile)))
+	} else {
+		// Set the log output to only stdout (console)
+		log.SetOutput(os.Stdout)
+	}
 }
 
 func loadGlobalConfig(filePath string) error {
@@ -107,8 +146,8 @@ func watchConfig(scriptsDir, appsDir string) {
 		case event := <-watcher.Events:
 			if event.Op&fsnotify.Write == fsnotify.Write {
 				if filepath.Ext(event.Name) == ".json" {
-					log.Printf("%s", color.YellowString("Detected changes in %s. Reloading configuration...", event.Name))
-					processScripts(scriptsDir, appsDir)
+					log.Printf("%s", color.HiGreenString("Detected changes in %s. Reloading configuration...", event.Name))
+					restartProcess(scriptsDir, appsDir)
 				}
 			}
 
@@ -116,6 +155,12 @@ func watchConfig(scriptsDir, appsDir string) {
 			log.Printf("%s", color.RedString("Watcher error: %v", err))
 		}
 	}
+}
+func restartProcess(scriptsDir, appsDir string) {
+	log.Printf("%s", color.YellowString("Restarting process due to JSON file changes..."))
+
+	// Reinitialize the watcher or process scripts
+	processScripts(scriptsDir, appsDir)
 }
 
 func pollRemoteRepositories(scriptsDir, appsDir string) {
@@ -278,7 +323,6 @@ func shouldExecuteSteps(repoDir, triggerBranch string) bool {
 		log.Printf("%s", color.RedString("Git output: %s", string(output)))
 		return false
 	}
-
 	// Extract the commit hash from the output
 	latestCommitHash := string(output)
 	latestCommitHash = latestCommitHash[:len(latestCommitHash)-1] // Remove newline
@@ -303,26 +347,25 @@ func shouldExecuteSteps(repoDir, triggerBranch string) bool {
 	log.Printf("%s", color.GreenString("Repository is up-to-date with the latest commit. Steps will not be executed."))
 	return false
 }
-
 func executeSteps(repoDir string, steps []Step, appName string) {
-	var wg sync.WaitGroup
-
-	for _, step := range steps {
-		wg.Add(1)
-		go func(step Step) {
-			defer wg.Done()
-			log.Printf("%s", color.BlueString("[%s] Executing step: %s", appName, step.Name))
+	for {
+		retry := false
+		for _, step := range steps {
+			log.Printf("%s", color.BlueString("\n[%s] Executing step: %s", appName, step.Name))
 			cmd := exec.Command(step.Cmd, step.Args...)
 			cmd.Dir = repoDir
 			output, err := cmd.CombinedOutput()
 			if err != nil {
 				log.Printf("%s", color.RedString("[%s] Step %s failed: %v", appName, step.Name, err))
 				log.Printf("%s", color.RedString("Step output: %s", string(output)))
-				return
+				retry = true
+				break // Exit the loop and restart from the first step
 			}
 			log.Printf("%s", color.GreenString("[%s] Output of step %s: %s", appName, step.Name, string(output)))
-		}(step)
+		}
+		if !retry {
+			break // Exit the outer loop if all steps are successful
+		}
+		log.Printf("%s", color.YellowString("[%s] Restarting steps due to failure", appName))
 	}
-
-	wg.Wait()
 }

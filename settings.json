@@ -1,6 +1,7 @@
 {
   "scriptsDirectory": "./scripts",
   "appsDirectory": "./apps",
-  "ticker": 30,
-  "logEnabled": true
+  "ticker": 5,
+  "logEnabled": true,
+  "logDirectory": "./logs"
 }
